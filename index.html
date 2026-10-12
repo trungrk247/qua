@@ -196,23 +196,28 @@
   var CONFIG = {
     // (mật mã giờ nằm trong danh sách GUESTS bên dưới)                 // mật mã mở quà
     photoUrl: '',                // dán link ảnh hoặc tên file ảnh (vd: 'anh.jpg'). Để trống = chạm vào khung để chọn ảnh
-    qrText: 'https://claude.ai/artifact/BjPHdrzJ5YVbP41N941aeb#mo-qua'  // link mà mã QR mở ra khi quét
+    qrText: 'https://trungrk247.github.io/qua/'  // link mà mã QR mở ra khi quét
   };
   /* ======================= */
 
   // ---- Ảnh ----
   var picks = document.querySelectorAll('[data-pick]'), fileInput = document.getElementById('file');
-  function setPhoto(src){
-    picks.forEach(function(p){
-      var old = p.querySelector('img'); if(old) old.remove();
-      var im = new Image(); im.src = src; im.alt = ''; p.insertBefore(im, p.firstChild); p.classList.add('has');
+  function clearPhoto(p){ var old = p.querySelector('img'); if(old) old.remove(); p.classList.remove('has'); }
+  function setPhoto(src, list){
+    (list || picks).forEach(function(p){
+      clearPhoto(p);
+      var im = new Image(); im.alt = '';
+      im.onerror = function(){ clearPhoto(p); };   // không tìm thấy ảnh -> quay về khung chọn ảnh
+      im.src = src; p.insertBefore(im, p.firstChild); p.classList.add('has');
     });
   }
   if(CONFIG.photoUrl) setPhoto(CONFIG.photoUrl);
-  picks.forEach(function(p){ p.addEventListener('click', function(){ fileInput.click(); }); });
+  var fileTarget = null;
+  picks.forEach(function(p){ p.addEventListener('click', function(){ fileTarget = p; fileInput.click(); }); });
   fileInput.addEventListener('change', function(){
     var f = fileInput.files[0]; if(!f) return;
-    var r = new FileReader(); r.onload = function(){ setPhoto(r.result); }; r.readAsDataURL(f);
+    var r = new FileReader(); r.onload = function(){ setPhoto(r.result, fileTarget ? [fileTarget] : null); }; r.readAsDataURL(f);
+    fileInput.value = '';
   });
 
   // ---- Trái tim bay ----
@@ -313,10 +318,11 @@
 
   // ---- MẬT MÃ: mỗi người một mật mã 4 số. name = tên hiện trên thư (có thể để trống) ----
   // Thêm người: chép một dòng, đổi mật mã (4 chữ số, không trùng nhau) và tên.
+  // photo: tên file ảnh của người đó (để cùng thư mục với trang, vd 'kim-ngan.jpg'). Bỏ trống = dùng photoUrl chung hoặc khung chọn ảnh.
   var GUESTS = {
-    '2010': {name: 'Kim Ngân'},
-    '0803': {name: 'Mẹ'},
-    '1507': {name: 'Chị'},
+    '2010': {name: 'Kim Ngân', photo: 'kim-ngan.jpg'},
+    '0803': {name: 'Mẹ', photo: 'me.jpg'},
+    '1507': {name: 'Chị', photo: 'chi.jpg'},
     '2508': {name: 'Em gái'},
     '1212': {name: 'Bạn thân'},
     '2024': {name: 'Đồng nghiệp'},
@@ -379,6 +385,8 @@
     document.getElementById('title').textContent = "Happy Women's Day" + (g.name ? ", " + g.name : "");
     var box = document.getElementById('wishList'); box.innerHTML = '';
     var texts = pickWishes(code), els = texts.map(function(){ var el = document.createElement('p'); el.className = 'letter wish'; box.appendChild(el); return el; });
+    var frame = document.querySelector('.photo');
+    if(g.photo) setPhoto(g.photo, [frame]); else if(CONFIG.photoUrl) setPhoto(CONFIG.photoUrl, [frame]); else clearPhoto(frame);
     paper.classList.remove('open'); void paper.offsetWidth; paper.classList.add('open');
     typeAll(els, texts);
   }
